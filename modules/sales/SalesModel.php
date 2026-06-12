@@ -56,6 +56,7 @@ class SalesModel extends Model
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['s.sale_number', 'c.name', 'c.phone'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
         if ($dateFrom) {
             $countSql .= " AND DATE(s.sale_date) >= :date_from";
@@ -70,7 +71,7 @@ class SalesModel extends Model
             $countParams['salesman_id'] = $salesmanId;
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function findWithItems(int $id): ?array

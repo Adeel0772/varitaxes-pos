@@ -38,7 +38,7 @@ class BrandsModel extends Model
             $countParams['search'] = '%' . $search . '%';
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function getAllActive(): array

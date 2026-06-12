@@ -65,7 +65,7 @@ class InventoryModel extends Model
             $countSql .= " AND COALESCE(i.qty_in_stock, 0) = 0";
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function getLowStock(int $limit = 100): array
@@ -106,7 +106,7 @@ class InventoryModel extends Model
         $countParams = ['product_id' => $productId];
         $this->bindTenant($countParams);
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function findProduct(int $productId): ?array

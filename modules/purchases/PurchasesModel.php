@@ -75,9 +75,10 @@ class PurchasesModel extends Model
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['s.name', 'p.notes'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function findWithItems(int $id): ?array

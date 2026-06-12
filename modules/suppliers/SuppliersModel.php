@@ -38,9 +38,10 @@ class SuppliersModel extends Model
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['s.name', 's.phone', 's.city'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function getAllActive(): array

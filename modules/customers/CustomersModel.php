@@ -41,12 +41,15 @@ class CustomersModel extends Model
 
         $countSql = "SELECT COUNT(*) as total FROM customers c
                      WHERE c.is_deleted = 0 AND {$this->tenantFilter('c')}";
+        $countParams = [];
+        $this->bindTenant($countParams);
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['c.name', 'c.phone'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function create(array $data): int

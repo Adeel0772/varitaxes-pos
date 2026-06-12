@@ -55,11 +55,12 @@ class UsersModel extends Model
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['name', 'email', 'phone'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
 
 
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
 
     }
 

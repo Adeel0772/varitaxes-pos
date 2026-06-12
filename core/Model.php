@@ -82,7 +82,7 @@ abstract class Model
         return $stmt->execute($params);
     }
 
-    protected function paginate(string $sql, array $params, int $page, string $countSql = ''): array
+    protected function paginate(string $sql, array $params, int $page, string $countSql = '', ?array $countParams = null): array
     {
         $page = max(1, $page);
         $offset = ($page - 1) * PER_PAGE;
@@ -93,7 +93,7 @@ abstract class Model
         }
 
         $countStmt = $this->db->prepare($countSql);
-        $countStmt->execute($params);
+        $countStmt->execute($countParams ?? $params);
         $total = (int) $countStmt->fetch()['total'];
 
         $sql .= " LIMIT " . PER_PAGE . " OFFSET {$offset}";

@@ -82,7 +82,7 @@ class ProductsModel extends Model
             $countParams['status'] = $status;
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function findWithDetails(int $id): ?array

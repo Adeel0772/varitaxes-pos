@@ -41,9 +41,10 @@ class ShopsModel extends Model
         if ($search !== '') {
             [$likeSql, $likeParams] = $this->orLikeClause('search', ['s.name', 's.owner_name', 's.phone', 's.city', 's.slug'], $search);
             $countSql .= $likeSql;
+            $countParams = array_merge($countParams, $likeParams);
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function getStats(): array

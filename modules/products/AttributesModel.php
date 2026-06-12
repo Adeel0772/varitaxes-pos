@@ -34,7 +34,7 @@ class AttributesModel extends Model
             $countParams['search'] = '%' . $search . '%';
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function findAttribute(int $id): ?array

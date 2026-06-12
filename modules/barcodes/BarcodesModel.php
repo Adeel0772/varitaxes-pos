@@ -44,7 +44,7 @@ class BarcodesModel extends Model
             $countParams['category_id'] = $categoryId;
         }
 
-        return $this->paginate($sql, $params, $page, $countSql);
+        return $this->paginate($sql, $params, $page, $countSql, $countParams);
     }
 
     public function getProductsByIds(array $ids): array
