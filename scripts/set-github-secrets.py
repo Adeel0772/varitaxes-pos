@@ -15,10 +15,10 @@ except ImportError:
 
 REPO = 'Adeel0772/varitaxes-pos'
 SECRETS = {
-    'FTP_SERVER': 'ftp.varitaxes.com',
-    'FTP_USERNAME': 'u149761999.pos',
+    'FTP_SERVER': '82.25.113.154',
+    'FTP_USERNAME': 'u149761999',
     'FTP_PASSWORD': os.environ.get('FTP_PASSWORD', ''),
-    'FTP_SERVER_DIR': './',
+    'FTP_SERVER_DIR': 'public_html/pos/',
 }
 
 
@@ -52,7 +52,10 @@ def api(method: str, url: str, token: str, data: dict | None = None):
         },
     )
     with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read().decode())
+        raw = resp.read().decode()
+        if not raw:
+            return {}
+        return json.loads(raw)
 
 
 def encrypt(public_key_b64: str, secret: str) -> str:
