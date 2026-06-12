@@ -136,7 +136,7 @@ class SettingsController extends Controller
 
             'shop_phone'              => trim((string) $this->input('shop_phone', '')),
 
-            'currency_symbol'         => trim((string) $this->input('currency_symbol', 'Rs.')),
+            'currency_symbol'         => \Core\Helpers::sanitizeCurrencySymbol(trim((string) $this->input('currency_symbol', 'Rs.'))),
 
             'low_stock_days'          => (string) max(1, (int) $this->input('low_stock_days', 7)),
 

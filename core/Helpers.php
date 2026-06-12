@@ -4,10 +4,24 @@ namespace Core;
 
 class Helpers
 {
-    public static function formatMoney($amount, bool $symbol = true): string
+    public static function sanitizeCurrencySymbol(?string $symbol): string
+    {
+        $symbol = trim((string) ($symbol ?? ''));
+        if ($symbol === '' || preg_match('/^\d+(\.\d+)?$/', $symbol) || strlen($symbol) > 12) {
+            return CURRENCY_SYMBOL;
+        }
+
+        return $symbol;
+    }
+
+    public static function formatMoney($amount, bool $symbol = true, ?string $currencySymbol = null): string
     {
         $formatted = number_format((float) $amount, 2);
-        return $symbol ? CURRENCY_SYMBOL . ' ' . $formatted : $formatted;
+        if (!$symbol) {
+            return $formatted;
+        }
+
+        return self::sanitizeCurrencySymbol($currencySymbol ?? CURRENCY_SYMBOL) . ' ' . $formatted;
     }
 
     public static function formatDate(?string $date, string $format = DATE_FORMAT): string

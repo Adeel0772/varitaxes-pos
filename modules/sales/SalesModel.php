@@ -212,6 +212,9 @@ class SalesModel extends Model
 
             $lineSubtotal = $unitPrice * $qty;
             if ($discountType === 'percent') {
+                if ($discountPerItem > 100) {
+                    throw new \InvalidArgumentException('Item discount cannot exceed 100%.');
+                }
                 $lineDiscount = $lineSubtotal * ($discountPerItem / 100);
             } else {
                 $lineDiscount = $discountPerItem * $qty;
@@ -269,8 +272,14 @@ class SalesModel extends Model
         $saleDiscountType = ($data['discount_type'] ?? 'flat') === 'percent' ? 'percent' : 'flat';
 
         if ($saleDiscountType === 'percent') {
+            if ($saleDiscountAmount > 100) {
+                throw new \InvalidArgumentException('Sale discount cannot exceed 100%.');
+            }
             $saleDiscount = round($subtotal * ($saleDiscountAmount / 100), 2);
         } else {
+            if ($saleDiscountAmount > $subtotal) {
+                throw new \InvalidArgumentException('Sale discount cannot exceed subtotal.');
+            }
             $saleDiscount = $saleDiscountAmount;
         }
         $saleDiscount = min(max(0, $saleDiscount), $subtotal);
@@ -286,7 +295,13 @@ class SalesModel extends Model
 
         $amountTendered = isset($data['amount_tendered']) ? (float) $data['amount_tendered'] : null;
         $changeAmount = null;
-        if ($paymentMethod === 'cash' && $amountTendered !== null) {
+        if ($paymentMethod === 'cash') {
+            if ($amountTendered === null || $amountTendered <= 0) {
+                throw new \InvalidArgumentException('Amount tendered is required for cash payment.');
+            }
+            if ($amountTendered < $totalAmount - 0.001) {
+                throw new \InvalidArgumentException('Amount tendered is less than sale total.');
+            }
             $changeAmount = max(0, round($amountTendered - $totalAmount, 2));
         }
 

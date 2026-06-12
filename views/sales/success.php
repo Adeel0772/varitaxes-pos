@@ -8,11 +8,14 @@
                 <h3 class="mt-3">Sale Completed!</h3>
                 <p class="text-muted mb-1">Sale Number</p>
                 <h4 class="text-primary"><code><?= htmlspecialchars($sale['sale_number']) ?></code></h4>
-                <p class="fs-2 fw-bold my-3"><?= Helpers::formatMoney($sale['total_amount']) ?></p>
+                <p class="text-muted mb-1 mt-3">Sale Total</p>
+                <p class="fs-2 fw-bold text-primary my-2">
+                    <?= Helpers::formatMoney($sale['total_amount'], true, $currencySymbol ?? null) ?>
+                </p>
 
-                <?php if ($sale['payment_method'] === 'cash' && $sale['change_amount'] > 0): ?>
-                <div class="alert alert-success d-inline-block">
-                    Change: <strong><?= Helpers::formatMoney($sale['change_amount']) ?></strong>
+                <?php if ($sale['payment_method'] === 'cash' && (float) ($sale['change_amount'] ?? 0) > 0): ?>
+                <div class="alert alert-success d-inline-block mb-0">
+                    Change: <strong><?= Helpers::formatMoney($sale['change_amount'], true, $currencySymbol ?? null) ?></strong>
                 </div>
                 <?php endif; ?>
 

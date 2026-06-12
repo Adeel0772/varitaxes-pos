@@ -13,9 +13,24 @@ function showToast(message, type) {
     el.addEventListener('hidden.bs.toast', function() { el.remove(); });
 }
 
+function closeSidebar() {
+    $('#sidebar').removeClass('show');
+    $('body').removeClass('sidebar-open');
+}
+
 $(document).ready(function() {
     $('#sidebarToggle').on('click', function() {
+        var opening = !$('#sidebar').hasClass('show');
         $('#sidebar').toggleClass('show');
+        $('body').toggleClass('sidebar-open', opening);
+    });
+
+    $('#sidebarBackdrop').on('click', closeSidebar);
+
+    $(document).on('click', '#sidebar .nav-link', function() {
+        if (window.innerWidth < 992) {
+            closeSidebar();
+        }
     });
 
     $.ajaxSetup({
@@ -23,8 +38,14 @@ $(document).ready(function() {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
             'X-Requested-With': 'XMLHttpRequest'
         },
-        beforeSend: function() { $('.loading-overlay').addClass('show'); },
-        complete: function() { $('.loading-overlay').removeClass('show'); }
+        beforeSend: function(xhr, settings) {
+            if (settings.url && settings.url.indexOf('sales/complete') === -1) {
+                $('.loading-overlay').addClass('show');
+            }
+        },
+        complete: function() {
+            $('.loading-overlay').removeClass('show');
+        }
     });
 
     $(document).on('submit', 'form[data-confirm]', function(e) {

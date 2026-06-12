@@ -24,6 +24,7 @@ $isImpersonating = \Core\Auth::isImpersonating();
 <?php endif; ?>
 
 <div class="loading-overlay"><div class="spinner-border text-primary" role="status"></div></div>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 <div class="d-flex" id="wrapper">
     <nav id="sidebar" class="sidebar bg-dark text-white">
         <div class="sidebar-header p-3 border-bottom border-secondary">

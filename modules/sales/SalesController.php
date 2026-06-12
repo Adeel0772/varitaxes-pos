@@ -4,6 +4,7 @@ namespace Modules\Sales;
 
 use Core\Auth;
 use Core\Controller;
+use Core\Helpers;
 use Modules\Products\ProductsModel;
 
 class SalesController extends Controller
@@ -32,7 +33,7 @@ class SalesController extends Controller
         $this->view('sales/pos', [
             'pageTitle'       => 'POS Sale',
             'defaultPayment'  => $settings['default_payment_method'] ?? 'cash',
-            'currencySymbol'  => $settings['currency_symbol'] ?? CURRENCY_SYMBOL,
+            'currencySymbol'  => Helpers::sanitizeCurrencySymbol($settings['currency_symbol'] ?? null),
         ]);
     }
 
@@ -149,9 +150,13 @@ class SalesController extends Controller
             $this->redirect('sales/pos');
         }
 
+        $settingsModel = new \Modules\Settings\SettingsModel();
+        $settings = $settingsModel->getAllSettings();
+
         $this->view('sales/success', [
-            'pageTitle' => 'Sale Complete',
-            'sale'      => $sale,
+            'pageTitle'      => 'Sale Complete',
+            'sale'           => $sale,
+            'currencySymbol' => Helpers::sanitizeCurrencySymbol($settings['currency_symbol'] ?? null),
         ]);
     }
 
