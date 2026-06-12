@@ -18,7 +18,7 @@ SECRETS = {
     'FTP_SERVER': 'ftp.varitaxes.com',
     'FTP_USERNAME': 'u149761999.pos',
     'FTP_PASSWORD': os.environ.get('FTP_PASSWORD', ''),
-    'FTP_SERVER_DIR': 'public_html/pos/',
+    'FTP_SERVER_DIR': './',
 }
 
 

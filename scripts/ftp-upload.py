@@ -24,7 +24,7 @@ def main() -> int:
     host = os.environ.get('FTP_SERVER', 'ftp.varitaxes.com')
     user = os.environ.get('FTP_USERNAME', '')
     password = os.environ.get('FTP_PASSWORD', '')
-    remote_base = os.environ.get('FTP_SERVER_DIR', 'public_html/pos').strip('/')
+    remote_base = os.environ.get('FTP_SERVER_DIR', '.').strip('/') or '.'
 
     if not user or not password:
         print('Set FTP_USERNAME and FTP_PASSWORD.', file=sys.stderr)

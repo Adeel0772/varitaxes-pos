@@ -29,9 +29,9 @@ In repo → **Settings → Secrets and variables → Actions → New repository 
 | `FTP_SERVER` | `ftp.varitaxes.com` |
 | `FTP_USERNAME` | `u149761999.pos` |
 | `FTP_PASSWORD` | *(your FTP password — never commit)* |
-| `FTP_SERVER_DIR` | `/public_html/pos/` |
+| `FTP_SERVER_DIR` | `./` (not needed in workflow — FTP login root is already `public_html/pos`) |
 
-> If deploy lands in the wrong folder, try `/domains/varitaxes.com/public_html/pos/` instead.
+> Account `u149761999.pos` opens directly in the subdomain folder. **Do not** use `public_html/pos/` or nested folders will be created.
 
 ### 4. Server setup (Hostinger / one time)
 

@@ -39,7 +39,8 @@ jobs:
           port: 21
           protocol: ftp
           local-dir: ./
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          # FTP account u149761999.pos root IS public_html/pos (subdomain folder) — deploy here, no extra path
+          server-dir: ./
           log-level: minimal
           dangerous-clean-slate: false
           exclude: |
