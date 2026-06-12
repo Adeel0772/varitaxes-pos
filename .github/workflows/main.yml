@@ -30,18 +30,17 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
-      - name: Deploy via FTP (Hostinger)
+      - name: Deploy via FTP (Hostinger subdomain account)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: 21
-          protocol: ftps-legacy
-          security: loose
+          protocol: ftp
           timeout: 600000
           local-dir: ./
-          server-dir: ${{ secrets.FTP_SERVER_DIR }}
+          server-dir: ./
           state-name: .ftp-deploy-sync-state.json
           log-level: standard
           dangerous-clean-slate: false

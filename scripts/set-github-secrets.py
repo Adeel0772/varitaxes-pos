@@ -16,9 +16,9 @@ except ImportError:
 REPO = 'Adeel0772/varitaxes-pos'
 SECRETS = {
     'FTP_SERVER': '82.25.113.154',
-    'FTP_USERNAME': 'u149761999',
+    'FTP_USERNAME': 'u149761999.pos',
     'FTP_PASSWORD': os.environ.get('FTP_PASSWORD', ''),
-    'FTP_SERVER_DIR': 'public_html/pos/',
+    'FTP_SERVER_DIR': './',
 }
 
 
