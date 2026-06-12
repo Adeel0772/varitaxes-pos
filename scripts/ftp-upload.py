@@ -1,65 +1,77 @@
 #!/usr/bin/env python3
-"""One-time FTP upload helper. Usage: set env vars FTP_* then run. NOT for committing passwords."""
+"""FTP upload helper. Set FTP_SERVER, FTP_USERNAME, FTP_PASSWORD, FTP_SERVER_DIR env vars."""
 import os
 import sys
 from ftplib import FTP, error_perm
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SKIP_DIRS = {'.git', '.github', 'tests', '__pycache__', 'node_modules'}
-SKIP_FILES = {'scripts/ftp-upload.py', 'DEPLOY.md'}
+SKIP_DIRS = {'.git', '.github', 'tests', '__pycache__', 'node_modules', 'scripts'}
+SKIP_FILES = set()
 
 
-def upload_dir(ftp: FTP, local: Path, remote: str) -> None:
-    try:
-        ftp.cwd(remote)
-    except error_perm:
-        ftp.mkd(remote)
-        ftp.cwd(remote)
-
-    for item in local.iterdir():
-        rel = item.relative_to(ROOT).as_posix()
-        if item.name in SKIP_DIRS or rel in SKIP_FILES:
-            continue
-        if item.name.startswith('.') and item.name not in ('.htaccess',):
-            continue
-
-        remote_name = item.name
-        if item.is_dir():
-            upload_dir(ftp, item, remote_name)
-            ftp.cwd('..')
-        else:
-            with open(item, 'rb') as f:
-                ftp.storbinary(f'STOR {remote_name}', f)
-            print(f'  UP {rel}')
-
-
-def main() -> int:
-    host = os.environ.get('FTP_SERVER', 'ftp.varitaxes.com')
-    user = os.environ.get('FTP_USERNAME', '')
-    password = os.environ.get('FTP_PASSWORD', '')
-    remote_dir = os.environ.get('FTP_SERVER_DIR', '/public_html/pos')
-
-    if not user or not password:
-        print('Set FTP_USERNAME and FTP_PASSWORD environment variables.', file=sys.stderr)
-        return 1
-
-    print(f'Connecting to {host} as {user}...')
-    ftp = FTP(host, timeout=120)
-    ftp.login(user, password)
-    ftp.set_pasv(True)
-
-    for part in remote_dir.strip('/').split('/'):
+def ftp_cwd(ftp: FTP, path: str) -> None:
+    ftp.cwd('/')
+    for part in [p for p in path.replace('\\', '/').split('/') if p and p != '.']:
         try:
             ftp.cwd(part)
         except error_perm:
             ftp.mkd(part)
             ftp.cwd(part)
 
-    print(f'Uploading from {ROOT} to /{ftp.pwd()} ...')
-    upload_dir(ftp, ROOT, '.')
+
+def main() -> int:
+    host = os.environ.get('FTP_SERVER', 'ftp.varitaxes.com')
+    user = os.environ.get('FTP_USERNAME', '')
+    password = os.environ.get('FTP_PASSWORD', '')
+    remote_base = os.environ.get('FTP_SERVER_DIR', 'public_html/pos').strip('/')
+
+    if not user or not password:
+        print('Set FTP_USERNAME and FTP_PASSWORD.', file=sys.stderr)
+        return 1
+
+    print(f'Connecting to {host} as {user}...')
+    ftp = FTP(host, timeout=180)
+    ftp.login(user, password)
+    ftp.set_pasv(True)
+
+    uploaded = 0
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        dirnames[:] = [
+            d for d in dirnames
+            if d not in SKIP_DIRS and not d.startswith('.')
+        ]
+
+        rel_dir = Path(dirpath).relative_to(ROOT).as_posix()
+        if rel_dir == '.':
+            remote_dir = remote_base
+        else:
+            remote_dir = f'{remote_base}/{rel_dir}'
+
+        try:
+            ftp_cwd(ftp, remote_dir)
+        except error_perm as e:
+            print(f'SKIP dir {rel_dir}: {e}', file=sys.stderr)
+            continue
+
+        for name in filenames:
+            if name.startswith('.') and name != '.htaccess':
+                continue
+            local_file = Path(dirpath) / name
+            rel_file = local_file.relative_to(ROOT).as_posix()
+            if rel_file in SKIP_FILES:
+                continue
+            try:
+                with open(local_file, 'rb') as f:
+                    ftp.storbinary(f'STOR {name}', f)
+                uploaded += 1
+                if uploaded % 50 == 0:
+                    print(f'  ... {uploaded} files ({rel_file})')
+            except (error_perm, OSError) as e:
+                print(f'FAIL {rel_file}: {e}', file=sys.stderr)
+
     ftp.quit()
-    print('Done.')
+    print(f'Done. Uploaded {uploaded} files to /{remote_base}/')
     return 0
 
 
