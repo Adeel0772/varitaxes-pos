@@ -1,0 +1,27 @@
+# Dependencies (install on server: composer install --no-dev)
+/vendor/
+
+# User uploads (keep folder structure only)
+/uploads/products/*
+!/uploads/products/.gitkeep
+/uploads/logos/*
+!/uploads/logos/.gitkeep
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local config overrides (never commit secrets)
+config/database.local.php
+.env
+.env.*
+
+# Logs & cache
+*.log
+/cache/
+
+# Test artifacts
+/tests/*.log

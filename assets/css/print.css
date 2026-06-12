@@ -1,0 +1,30 @@
+@media screen {
+    body { padding: 20px; background: #eee; }
+    .no-print { display: block; margin-bottom: 20px; }
+}
+
+@media print {
+    body { margin: 0; padding: 0; }
+    .no-print { display: none !important; }
+}
+
+/* A4 Invoice */
+.invoice-a4 { max-width: 210mm; margin: 0 auto; background: #fff; padding: 20mm; font-family: Arial, sans-serif; font-size: 12px; }
+.invoice-a4 table { width: 100%; border-collapse: collapse; }
+.invoice-a4 th, .invoice-a4 td { border: 1px solid #ddd; padding: 6px 8px; }
+.invoice-a4 th { background: #f5f5f5; }
+
+/* Thermal / Carbon 80mm */
+.invoice-thermal { width: 80mm; margin: 0 auto; background: #fff; padding: 5mm; font-family: monospace; font-size: 11px; }
+.invoice-thermal table { width: 100%; border-collapse: collapse; }
+.invoice-thermal th, .invoice-thermal td { padding: 2px 0; border-bottom: 1px dashed #ccc; }
+.invoice-thermal .text-center { text-align: center; }
+.invoice-thermal .text-right { text-align: right; }
+.invoice-thermal hr { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+
+/* Barcode labels */
+.barcode-labels { display: flex; flex-wrap: wrap; gap: 10px; }
+.barcode-label { border: 1px solid #ccc; text-align: center; padding: 8px; page-break-inside: avoid; }
+.barcode-label.small { width: 120px; font-size: 9px; }
+.barcode-label.medium { width: 180px; font-size: 11px; }
+.barcode-label.large { width: 250px; font-size: 13px; }
