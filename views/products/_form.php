@@ -128,7 +128,7 @@ $showPurchase = Auth::canSeePurchasePrice();
                         <div class="col-md-4">
                             <label class="form-label">Purchase Price</label>
                             <div class="input-group">
-                                <span class="input-group-text"><?= CURRENCY_SYMBOL ?></span>
+                                <span class="input-group-text"><?= Helpers::getCurrencySymbol() ?></span>
                                 <input type="number" name="purchase_price" class="form-control" step="0.01" min="0" value="<?= htmlspecialchars((string)($p['purchase_price'] ?? '0')) ?>">
                             </div>
                         </div>
@@ -136,14 +136,14 @@ $showPurchase = Auth::canSeePurchasePrice();
                         <div class="col-md-4">
                             <label class="form-label">Sale Price <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <span class="input-group-text"><?= CURRENCY_SYMBOL ?></span>
+                                <span class="input-group-text"><?= Helpers::getCurrencySymbol() ?></span>
                                 <input type="number" name="sale_price" class="form-control" step="0.01" min="0.01" required value="<?= htmlspecialchars((string)($p['sale_price'] ?? '')) ?>">
                             </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Min Sale Price</label>
                             <div class="input-group">
-                                <span class="input-group-text"><?= CURRENCY_SYMBOL ?></span>
+                                <span class="input-group-text"><?= Helpers::getCurrencySymbol() ?></span>
                                 <input type="number" name="min_sale_price" class="form-control" step="0.01" min="0" value="<?= htmlspecialchars((string)($p['min_sale_price'] ?? '0')) ?>">
                             </div>
                             <small class="text-muted">Lowest allowed price at POS</small>

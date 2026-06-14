@@ -33,7 +33,7 @@ class SalesController extends Controller
         $this->view('sales/pos', [
             'pageTitle'       => 'POS Sale',
             'defaultPayment'  => $settings['default_payment_method'] ?? 'cash',
-            'currencySymbol'  => Helpers::sanitizeCurrencySymbol($settings['currency_symbol'] ?? null),
+            'currencySymbol'  => Helpers::getCurrencySymbol(),
         ]);
     }
 
@@ -156,7 +156,7 @@ class SalesController extends Controller
         $this->view('sales/success', [
             'pageTitle'      => 'Sale Complete',
             'sale'           => $sale,
-            'currencySymbol' => Helpers::sanitizeCurrencySymbol($settings['currency_symbol'] ?? null),
+            'currencySymbol' => Helpers::getCurrencySymbol(),
         ]);
     }
 

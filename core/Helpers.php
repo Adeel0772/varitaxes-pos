@@ -4,14 +4,53 @@ namespace Core;
 
 class Helpers
 {
+    private const DEFAULT_CURRENCY_SYMBOL = 'Rs.';
+
     public static function sanitizeCurrencySymbol(?string $symbol): string
     {
         $symbol = trim((string) ($symbol ?? ''));
-        if ($symbol === '' || preg_match('/^\d+(\.\d+)?$/', $symbol) || strlen($symbol) > 12) {
-            return CURRENCY_SYMBOL;
+        if ($symbol === ''
+            || preg_match('/^\d+(\.\d+)?$/', $symbol)
+            || strlen($symbol) > 12
+            || !preg_match('/[\p{L}\p{Sc}]/u', $symbol)
+        ) {
+            return self::DEFAULT_CURRENCY_SYMBOL;
         }
 
         return $symbol;
+    }
+
+    /**
+     * Tenant currency from settings, with safe hardcoded fallback (never trusts a bad PHP constant).
+     */
+    public static function getCurrencySymbol(): string
+    {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $symbol = self::DEFAULT_CURRENCY_SYMBOL;
+
+        if (class_exists(Auth::class) && Auth::check() && Auth::tenantId()) {
+            try {
+                $stmt = Database::getInstance()->prepare(
+                    "SELECT setting_value FROM settings
+                     WHERE tenant_id = :tenant_id AND setting_key = 'currency_symbol'
+                     AND is_deleted = 0 LIMIT 1"
+                );
+                $stmt->execute(['tenant_id' => Auth::tenantId()]);
+                $row = $stmt->fetch();
+                if ($row && trim((string) $row['setting_value']) !== '') {
+                    $symbol = trim((string) $row['setting_value']);
+                }
+            } catch (\Throwable $e) {
+                // keep default
+            }
+        }
+
+        $cached = self::sanitizeCurrencySymbol($symbol);
+        return $cached;
     }
 
     public static function formatMoney($amount, bool $symbol = true, ?string $currencySymbol = null): string
@@ -21,7 +60,11 @@ class Helpers
             return $formatted;
         }
 
-        return self::sanitizeCurrencySymbol($currencySymbol ?? CURRENCY_SYMBOL) . ' ' . $formatted;
+        $curr = $currencySymbol !== null
+            ? self::sanitizeCurrencySymbol($currencySymbol)
+            : self::getCurrencySymbol();
+
+        return $curr . ' ' . $formatted;
     }
 
     public static function formatDate(?string $date, string $format = DATE_FORMAT): string
