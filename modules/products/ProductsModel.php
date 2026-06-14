@@ -276,6 +276,37 @@ class ProductsModel extends Model
         return null;
     }
 
+    public function getProductStock(int $productId, ?int $variantId = null): int
+    {
+        if ($variantId) {
+            $stmt = $this->db->prepare(
+                "SELECT COALESCE(i.qty_in_stock, pv.stock_qty, 0) AS qty
+                 FROM product_variants pv
+                 LEFT JOIN inventory i ON i.product_id = pv.product_id
+                     AND i.variant_id = pv.id AND i.is_deleted = 0 AND i.tenant_id = pv.tenant_id
+                 WHERE pv.id = :variant_id AND pv.product_id = :product_id
+                 AND pv.is_deleted = 0 AND {$this->tenantFilter('pv')}"
+            );
+            $params = ['variant_id' => $variantId, 'product_id' => $productId];
+            $this->bindTenant($params);
+            $stmt->execute($params);
+            $row = $stmt->fetch();
+
+            return (int) ($row['qty'] ?? 0);
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT COALESCE(qty_in_stock, 0) AS qty FROM inventory
+             WHERE product_id = :product_id AND variant_id IS NULL AND is_deleted = 0 AND {$this->tenantFilter()}"
+        );
+        $params = ['product_id' => $productId];
+        $this->bindTenant($params);
+        $stmt->execute($params);
+        $row = $stmt->fetch();
+
+        return (int) ($row['qty'] ?? 0);
+    }
+
     public function searchForPos(string $q, int $limit = 20): array
     {
         $limit = max(1, min(50, $limit));

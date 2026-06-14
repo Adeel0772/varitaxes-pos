@@ -201,6 +201,7 @@ class SalesController extends Controller
         }
 
         $variants = $this->model->getProductVariants($productId);
+        $stockQty = $this->productsModel->getProductStock($productId);
 
         $this->json([
             'success'  => true,
@@ -210,6 +211,7 @@ class SalesController extends Controller
                 'product_code'   => $product['product_code'],
                 'sale_price'     => (float) $product['sale_price'],
                 'min_sale_price' => (float) $product['min_sale_price'],
+                'qty_in_stock'   => $stockQty,
                 'image'          => !empty($product['image']) ? \Core\Helpers::productImageUrl((int) $product['id']) : null,
             ],
             'variants' => array_map(static function ($v) use ($product) {

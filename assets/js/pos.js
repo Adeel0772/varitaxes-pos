@@ -13,6 +13,23 @@
         return cfg.currencySymbol + ' ' + parseFloat(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
+    function parseStock(value) {
+        var n = parseInt(value, 10);
+        return Number.isFinite(n) && n >= 0 ? n : 0;
+    }
+
+    function mergeProductStock(apiProduct, searchProduct) {
+        if (!apiProduct) {
+            return searchProduct;
+        }
+        if (apiProduct.qty_in_stock == null || !Number.isFinite(parseInt(apiProduct.qty_in_stock, 10))) {
+            apiProduct.qty_in_stock = searchProduct ? parseStock(searchProduct.qty_in_stock) : 0;
+        } else {
+            apiProduct.qty_in_stock = parseStock(apiProduct.qty_in_stock);
+        }
+        return apiProduct;
+    }
+
     function cartKey(productId, variantId) {
         return productId + '_' + (variantId || '0');
     }
@@ -82,6 +99,7 @@
         }
 
         cart.forEach(function (item, idx) {
+            item.max_stock = parseStock(item.max_stock);
             var lineTotal = calcLineTotal(item);
             var minHint = item.min_sale_price > 0
                 ? '<small class="text-muted d-block">Min: ' + money(item.min_sale_price) + '</small>'
@@ -140,7 +158,9 @@
             ? parseFloat(variant.unit_price)
             : parseFloat(product.sale_price);
         var minPrice = parseFloat(product.min_sale_price) || 0;
-        var maxStock = variant ? parseInt(variant.qty_in_stock, 10) : parseInt(product.qty_in_stock, 10);
+        var maxStock = variant
+            ? parseStock(variant.qty_in_stock)
+            : parseStock(product.qty_in_stock);
         var name = product.name;
 
         if (variant && variant.label) {
@@ -488,10 +508,11 @@
             e.preventDefault();
             var product = $(this).data('product');
             loadVariants(product, function (res) {
+                var p = mergeProductStock(res.product, product);
                 if (res.variants && res.variants.length > 0) {
-                    showVariantModal(res.product, res.variants);
+                    showVariantModal(p, res.variants);
                 } else {
-                    addToCart(res.product, null);
+                    addToCart(p, null);
                 }
             });
         });
@@ -515,18 +536,22 @@
 
         $(document).on('click', '.btn-qty-plus', function () {
             var idx = $(this).closest('.pos-cart-item').data('idx');
-            if (cart[idx].qty < cart[idx].max_stock) {
+            var maxStock = parseStock(cart[idx].max_stock);
+            cart[idx].max_stock = maxStock;
+            if (cart[idx].qty < maxStock) {
                 cart[idx].qty += 1;
                 renderCart();
             } else {
-                showToast('Maximum stock reached.', 'warning');
+                showToast('Maximum stock reached (' + maxStock + ' available).', 'warning');
             }
         });
 
         $(document).on('change input', '.cart-qty', function () {
             var idx = $(this).closest('.pos-cart-item').data('idx');
+            var maxStock = parseStock(cart[idx].max_stock);
+            cart[idx].max_stock = maxStock;
             var val = parseInt($(this).val(), 10) || 1;
-            val = Math.max(1, Math.min(cart[idx].max_stock, val));
+            val = Math.max(1, Math.min(maxStock || 1, val));
             cart[idx].qty = val;
             $(this).val(val);
             renderCart();
@@ -626,12 +651,13 @@
                         if (res.success && res.products.length === 1) {
                             var product = res.products[0];
                             loadVariants(product, function (vr) {
-                                if (vr.variants && vr.variants.length === 1 && vr.variants[0].qty_in_stock > 0) {
-                                    addToCart(vr.product, vr.variants[0]);
+                                var p = mergeProductStock(vr.product, product);
+                                if (vr.variants && vr.variants.length === 1 && parseStock(vr.variants[0].qty_in_stock) > 0) {
+                                    addToCart(p, vr.variants[0]);
                                 } else if (vr.variants && vr.variants.length > 0) {
-                                    showVariantModal(vr.product, vr.variants);
+                                    showVariantModal(p, vr.variants);
                                 } else {
-                                    addToCart(vr.product, null);
+                                    addToCart(p, null);
                                 }
                             });
                         } else if (res.success && res.products.length > 1) {
