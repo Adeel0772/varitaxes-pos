@@ -97,7 +97,10 @@ class AuthController extends Controller
             AuthViews::repair($root);
         }
 
-        $dbLocal = $root . '/config/database.local.php';
+        $dbLocal = $root . '/storage/database.local.php';
+        if (!is_file($dbLocal)) {
+            $dbLocal = $root . '/config/database.local.php';
+        }
         if (!is_file($dbLocal)) {
             Auth::flash('error', 'Database not configured. Open /setup-database.php first.');
         }

@@ -30,6 +30,14 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
 
+      - name: Create database config from GitHub secrets (optional)
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        run: php scripts/write-database-local.php
+
       - name: Reset FTP sync cache (force upload critical files)
         run: rm -f .ftp-deploy-sync-state.json
 
@@ -58,3 +66,5 @@ jobs:
             **/.gitignore
             **/router.php
             **/database/seed.sql
+            config/database.local.php
+            storage/database.local.php

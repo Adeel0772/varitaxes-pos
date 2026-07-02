@@ -1,0 +1,3 @@
+# Never upload or delete server-side database credentials during deploy
+config/database.local.php
+storage/database.local.php

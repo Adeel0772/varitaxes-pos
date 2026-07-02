@@ -5,32 +5,61 @@ declare(strict_types=1);
 /**
  * ONE-TIME Hostinger database setup — delete after use.
  * Visit: https://pos.varitaxes.com/setup-database.php
+ *
+ * Saves to storage/database.local.php so future GitHub deploys do not wipe credentials.
  */
 
 $root = __DIR__;
-$target = $root . '/config/database.local.php';
+$targets = [
+    $root . '/storage/database.local.php',
+    $root . '/config/database.local.php',
+];
 $errors = [];
 $saved = false;
 $force = isset($_GET['reconfigure']) && $_GET['reconfigure'] === '1';
 $connectionOk = false;
 $connectionError = null;
+$configPath = null;
+
+function existingConfigPath(array $targets): ?string
+{
+    foreach ($targets as $path) {
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+    return null;
+}
+
+function writeDatabaseConfig(array $targets, string $php): array
+{
+    $results = [];
+    foreach ($targets as $path) {
+        $dir = dirname($path);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $results[$path] = file_put_contents($path, $php) !== false;
+    }
+    return $results;
+}
 
 function testDatabaseConnection(string $root): array
 {
     try {
-        if (class_exists(\Core\Database::class)) {
-            \Core\Database::getInstance()->query('SELECT 1');
-        } else {
+        if (!class_exists(\Core\Database::class)) {
             require_once $root . '/vendor/autoload.php';
-            \Core\Database::getInstance()->query('SELECT 1');
         }
+        \Core\Database::getInstance()->query('SELECT 1');
         return ['ok' => true, 'error' => null];
     } catch (Throwable $e) {
         return ['ok' => false, 'error' => $e->getMessage()];
     }
 }
 
-if (is_file($target) && !$force) {
+$configPath = existingConfigPath($targets);
+
+if ($configPath !== null && !$force) {
     require_once $root . '/vendor/autoload.php';
     $result = testDatabaseConnection($root);
     $connectionOk = $result['ok'];
@@ -51,11 +80,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
-        $configDir = $root . '/config';
-        if (!is_dir($configDir)) {
-            @mkdir($configDir, 0755, true);
-        }
-
         $php = "<?php\n\nreturn " . var_export([
             'host'     => $host,
             'dbname'   => $dbname,
@@ -69,24 +93,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ],
         ], true) . ";\n";
 
-        if (file_put_contents($target, $php) === false) {
-            $errors[] = 'Could not write config/database.local.php. In hPanel File Manager, create that file manually with your MySQL credentials.';
+        $writeResults = writeDatabaseConfig($targets, $php);
+        if (!$writeResults[$targets[0]]) {
+            $errors[] = 'Could not write storage/database.local.php — check folder permissions in hPanel.';
         } else {
             require_once $root . '/vendor/autoload.php';
             $result = testDatabaseConnection($root);
             if ($result['ok']) {
                 $saved = true;
                 $connectionOk = true;
+                $configPath = $targets[0];
             } else {
-                @unlink($target);
+                foreach ($targets as $path) {
+                    if (is_file($path)) {
+                        @unlink($path);
+                    }
+                }
                 $errors[] = 'Connection test failed: ' . $result['error'];
             }
         }
     }
 }
 
-$showForm = $force || !is_file($target) || (!$connectionOk && $_SERVER['REQUEST_METHOD'] !== 'POST');
-$existingConfig = is_file($target) ? (require $target) : null;
+$existingConfig = $configPath !== null ? (require $configPath) : null;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -102,41 +131,32 @@ $existingConfig = is_file($target) ? (require $target) : null;
 
     <?php if ($saved): ?>
         <div class="alert alert-success">
-            Database configured successfully. <a href="/auth/login">Go to login</a>
+            Database saved to <code>storage/database.local.php</code> (survives GitHub deploys).
+            <a href="/auth/login">Go to login</a>
         </div>
     <?php elseif ($connectionOk && !$force): ?>
         <div class="alert alert-success">
-            Database connection is working.
+            Database connection is working via <code><?= htmlspecialchars(str_replace($root, '', $configPath ?? '')) ?></code>.
             <a href="/auth/login">Go to login</a>
         </div>
-        <p class="small text-muted">
-            <a href="?reconfigure=1">Reconfigure database</a>
-        </p>
+        <p class="small text-muted"><a href="?reconfigure=1">Reconfigure database</a></p>
     <?php else: ?>
-        <?php if (is_file($target) && $connectionError): ?>
+        <?php if ($configPath && $connectionError): ?>
             <div class="alert alert-warning">
-                Config file exists but connection failed:<br>
+                Config exists but connection failed:<br>
                 <code><?= htmlspecialchars($connectionError) ?></code>
             </div>
-        <?php elseif (!is_file($target)): ?>
+        <?php elseif ($configPath === null): ?>
             <div class="alert alert-warning">
-                <code>config/database.local.php</code> is missing. Login cannot verify users until this is configured.
+                No database config found. Recent deploys reset <code>config/database.php</code> to local dev defaults.
+                Enter your Hostinger MySQL credentials below — they will be stored safely in
+                <code>storage/database.local.php</code>.
             </div>
         <?php endif; ?>
 
         <?php foreach ($errors as $error): ?>
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endforeach; ?>
-
-        <p class="text-muted small">
-            In <strong>hPanel → Databases → MySQL Databases</strong>, copy the database name, username, and password.
-            Common values for this account:
-        </p>
-        <ul class="small text-muted">
-            <li>Host: <code>localhost</code></li>
-            <li>Database: <code>u149761999_pos</code></li>
-            <li>Username: often <code>u149761999_pos</code> or <code>u149761999_posuser</code></li>
-        </ul>
 
         <form method="POST" class="card card-body shadow-sm">
             <div class="mb-3">
@@ -156,8 +176,7 @@ $existingConfig = is_file($target) ? (require $target) : null;
             </div>
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <input type="password" name="password" class="form-control" required
-                       placeholder="<?= is_file($target) ? 'Enter MySQL password' : '' ?>">
+                <input type="password" name="password" class="form-control" required>
             </div>
             <button type="submit" class="btn btn-primary w-100">Save and test connection</button>
         </form>

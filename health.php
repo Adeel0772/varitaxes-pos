@@ -31,8 +31,18 @@ $checks = [
         return str_contains((string) file_get_contents($file), 'private function model()') ? 'ok' : 'OLD';
     })(),
     'mod_rewrite'     => (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_modules(), true)) ? 'ok' : 'unknown',
-    'database_local'  => is_file($root . '/config/database.local.php') ? 'ok' : 'MISSING — create from config/database.hostinger.example.php',
-];
+    'database_local'  => (function () use ($root): string {
+        $paths = [
+            $root . '/storage/database.local.php',
+            $root . '/config/database.local.php',
+        ];
+        foreach ($paths as $path) {
+            if (is_file($path)) {
+                return 'ok (' . basename($path) . ')';
+            }
+        }
+        return 'MISSING — open /setup-database.php';
+    })(),];
 
 foreach ($checks as $key => $value) {
     echo $key . ': ' . $value . "\n";
@@ -44,7 +54,7 @@ if ($checks['vendor_autoload'] === 'ok') {
         require_once $root . '/config/constants.php';
         echo "bootstrap: ok\n";
 
-        if (is_file($root . '/config/database.local.php')) {
+        if (is_file($root . '/storage/database.local.php') || is_file($root . '/config/database.local.php')) {
             try {
                 \Core\Database::getInstance()->query('SELECT 1');
                 echo "database_connect: ok\n";
@@ -52,7 +62,7 @@ if ($checks['vendor_autoload'] === 'ok') {
                 echo "database_connect: FAIL - " . $e->getMessage() . "\n";
             }
         } else {
-            echo "database_connect: skipped (no database.local.php — using default localhost config)\n";
+            echo "database_connect: skipped (no database.local.php)\n";
         }
     } catch (Throwable $e) {
         echo "bootstrap: FAIL - " . $e->getMessage() . "\n";

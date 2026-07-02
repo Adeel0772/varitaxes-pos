@@ -16,6 +16,7 @@ Thumbs.db
 
 # Local config overrides (never commit secrets)
 config/database.local.php
+storage/database.local.php
 .env
 .env.*
 

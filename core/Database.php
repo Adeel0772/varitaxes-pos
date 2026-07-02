@@ -12,11 +12,7 @@ class Database
     public static function getInstance(): PDO
     {
         if (self::$instance === null) {
-            $configFile = dirname(__DIR__) . '/config/database.php';
-            $localFile = dirname(__DIR__) . '/config/database.local.php';
-            if (is_file($localFile)) {
-                $configFile = $localFile;
-            }
+            $configFile = self::resolveConfigFile();
             $config = require $configFile;
             $dsn = sprintf(
                 'mysql:host=%s;dbname=%s;charset=%s',
@@ -34,8 +30,8 @@ class Database
                 $message = 'Database connection failed: ' . $e->getMessage();
                 $onProduction = str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com');
                 if (($appConfig['debug'] ?? false) || $onProduction) {
-                    if ($onProduction && !is_file(dirname(__DIR__) . '/config/database.local.php')) {
-                        $message .= ' — Create config/database.local.php via /setup-database.php';
+                    if ($onProduction && !self::hasLocalConfig()) {
+                        $message .= ' — Open /setup-database.php (credentials are saved in storage/database.local.php)';
                     }
                     throw new \RuntimeException($message, 0, $e);
                 }
@@ -43,5 +39,41 @@ class Database
             }
         }
         return self::$instance;
+    }
+
+    public static function configPaths(): array
+    {
+        $root = dirname(__DIR__);
+        return [
+            $root . '/storage/database.local.php',
+            $root . '/config/database.local.php',
+        ];
+    }
+
+    public static function hasLocalConfig(): bool
+    {
+        foreach (self::configPaths() as $path) {
+            if (is_file($path)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function resolveConfigFile(): string
+    {
+        foreach (self::configPaths() as $path) {
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        if (str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com')) {
+            throw new \RuntimeException(
+                'Database not configured on production. Open /setup-database.php to save your Hostinger MySQL credentials.'
+            );
+        }
+
+        return dirname(__DIR__) . '/config/database.php';
     }
 }
