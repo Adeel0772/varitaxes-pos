@@ -39,48 +39,52 @@ class AuthController extends Controller
                 return;
             }
 
-            $attempts = $this->model()->getRecentAttempts($email, $ip, LOGIN_LOCKOUT_MINUTES);
-            if ($attempts >= LOGIN_MAX_ATTEMPTS) {
-                Auth::flash('error', 'Too many login attempts. Try again in ' . LOGIN_LOCKOUT_MINUTES . ' minutes.');
-                $this->renderLoginView();
-                return;
-            }
-
-            $superAdmin = $this->model()->findSuperAdminByEmail($email);
-            if ($superAdmin && password_verify($password, $superAdmin['password'])) {
-                $this->model()->clearLoginAttempts($email, $ip);
-                Auth::login($superAdmin, 'super_admin');
-                $this->logActivity('login', 'auth');
-                $this->redirect('admin/dashboard');
-            }
-
-            $user = $this->model()->findUserByEmail($email);
-            if ($user && password_verify($password, $user['password'])) {
-                if ($user['status'] !== 'active') {
-                    Auth::flash('error', 'Your account is inactive. Contact your shop owner.');
-                    $this->renderLoginView();
-                    return;
-                }
-                if ($user['shop_status'] === 'suspended') {
-                    Auth::flash('error', 'Your account is suspended. Contact support.');
-                    $this->renderLoginView();
-                    return;
-                }
-                if ($user['shop_status'] === 'pending') {
-                    Auth::flash('error', 'Your shop registration is pending approval.');
+            try {
+                $attempts = $this->model()->getRecentAttempts($email, $ip, LOGIN_LOCKOUT_MINUTES);
+                if ($attempts >= LOGIN_MAX_ATTEMPTS) {
+                    Auth::flash('error', 'Too many login attempts. Try again in ' . LOGIN_LOCKOUT_MINUTES . ' minutes.');
                     $this->renderLoginView();
                     return;
                 }
 
-                $this->model()->clearLoginAttempts($email, $ip);
-                $this->model()->updateLastLogin((int) $user['id']);
-                Auth::login($user, 'user');
-                $this->logActivity('login', 'auth', (int) $user['id']);
-                $this->redirect('dashboard');
-            }
+                $superAdmin = $this->model()->findSuperAdminByEmail($email);
+                if ($superAdmin && password_verify($password, $superAdmin['password'])) {
+                    $this->model()->clearLoginAttempts($email, $ip);
+                    Auth::login($superAdmin, 'super_admin');
+                    $this->logActivity('login', 'auth');
+                    $this->redirect('admin/dashboard');
+                }
 
-            $this->model()->recordLoginAttempt($email, $ip);
-            Auth::flash('error', 'Invalid email or password.');
+                $user = $this->model()->findUserByEmail($email);
+                if ($user && password_verify($password, $user['password'])) {
+                    if ($user['status'] !== 'active') {
+                        Auth::flash('error', 'Your account is inactive. Contact your shop owner.');
+                        $this->renderLoginView();
+                        return;
+                    }
+                    if ($user['shop_status'] === 'suspended') {
+                        Auth::flash('error', 'Your account is suspended. Contact support.');
+                        $this->renderLoginView();
+                        return;
+                    }
+                    if ($user['shop_status'] === 'pending') {
+                        Auth::flash('error', 'Your shop registration is pending approval.');
+                        $this->renderLoginView();
+                        return;
+                    }
+
+                    $this->model()->clearLoginAttempts($email, $ip);
+                    $this->model()->updateLastLogin((int) $user['id']);
+                    Auth::login($user, 'user');
+                    $this->logActivity('login', 'auth', (int) $user['id']);
+                    $this->redirect('dashboard');
+                }
+
+                $this->model()->recordLoginAttempt($email, $ip);
+                Auth::flash('error', 'Invalid email or password.');
+            } catch (\Throwable $e) {
+                Auth::flash('error', 'Database not configured. Open /setup-database.php to connect MySQL.');
+            }
         }
 
         $this->renderLoginView();
@@ -91,6 +95,11 @@ class AuthController extends Controller
         $root = dirname(__DIR__, 2);
         if (!AuthViews::viewsAreValid($root)) {
             AuthViews::repair($root);
+        }
+
+        $dbLocal = $root . '/config/database.local.php';
+        if (!is_file($dbLocal)) {
+            Auth::flash('error', 'Database not configured. Open /setup-database.php first.');
         }
 
         if (AuthViews::viewsAreValid($root)) {

@@ -32,7 +32,11 @@ class Database
             } catch (PDOException $e) {
                 $appConfig = require dirname(__DIR__) . '/config/app.php';
                 $message = 'Database connection failed: ' . $e->getMessage();
-                if ($appConfig['debug'] ?? false) {
+                $onProduction = str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com');
+                if (($appConfig['debug'] ?? false) || $onProduction) {
+                    if ($onProduction && !is_file(dirname(__DIR__) . '/config/database.local.php')) {
+                        $message .= ' — Create config/database.local.php via /setup-database.php';
+                    }
                     throw new \RuntimeException($message, 0, $e);
                 }
                 throw new \RuntimeException('Database connection failed. Please contact support.', 0, $e);
