@@ -47,16 +47,6 @@ jobs:
           state-name: .ftp-deploy-sync-state.json
           log-level: standard
           dangerous-clean-slate: false
-          include: |
-            .htaccess
-            index.php
-            health.php
-            cleanup.php
-            setup-database.php
-            views/layouts/auth.php
-            views/auth/login.php
-            modules/auth/AuthController.php
-            core/Controller.php
           exclude: |
             **/.git*
             **/.github/**

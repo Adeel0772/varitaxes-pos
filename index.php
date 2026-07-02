@@ -37,6 +37,7 @@ spl_autoload_register(function (string $class): void {
 });
 
 require_once __DIR__ . '/config/constants.php';
+require_once __DIR__ . '/core/helpers_global.php';
 
 $appConfig = require __DIR__ . '/config/app.php';
 date_default_timezone_set($appConfig['timezone']);
