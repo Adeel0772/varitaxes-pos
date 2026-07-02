@@ -3,11 +3,16 @@ RewriteBase /
 
 DirectoryIndex index.php
 
+# Explicit routes (work even if a physical auth/ folder exists on server)
+RewriteRule ^auth/login/?$ index.php?url=auth/login [L,QSA]
+RewriteRule ^auth/logout/?$ index.php?url=auth/logout [L,QSA]
+RewriteRule ^dashboard/?$ index.php?url=dashboard [L,QSA]
+RewriteRule ^sales/pos/?$ index.php?url=sales/pos [L,QSA]
+
 # Block access to sensitive directories
 RewriteRule ^(config|core|modules|database|uploads)/ - [F,L]
 
-# Route all non-file requests to front controller (do NOT skip directories —
-# a physical "auth" folder on the server would otherwise break /auth/login)
+# Front controller — do not skip directories (!-d)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 

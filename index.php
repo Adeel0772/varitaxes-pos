@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+// POS SaaS front controller v1.0.1
 
 require_once __DIR__ . '/vendor/autoload.php';
 
