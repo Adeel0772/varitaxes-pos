@@ -44,6 +44,10 @@ jobs:
           state-name: .ftp-deploy-sync-state.json
           log-level: standard
           dangerous-clean-slate: false
+          include: |
+            .htaccess
+            index.php
+            health.php
           exclude: |
             **/.git*
             **/.github/**

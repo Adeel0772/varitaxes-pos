@@ -1,0 +1,32 @@
+<?php
+
+declare(strict_types=1);
+
+header('Content-Type: text/plain; charset=utf-8');
+
+$root = __DIR__;
+$checks = [
+    'php_version'     => PHP_VERSION,
+    'index_php'       => is_file($root . '/index.php') ? 'ok' : 'MISSING',
+    'htaccess'        => is_file($root . '/.htaccess') ? 'ok' : 'MISSING',
+    'vendor_autoload' => is_file($root . '/vendor/autoload.php') ? 'ok' : 'MISSING',
+    'core_app'        => is_file($root . '/core/App.php') ? 'ok' : 'MISSING',
+    'auth_controller' => is_file($root . '/modules/auth/AuthController.php') ? 'ok' : 'MISSING',
+    'mod_rewrite'     => (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_modules(), true)) ? 'ok' : 'unknown',
+];
+
+foreach ($checks as $key => $value) {
+    echo $key . ': ' . $value . "\n";
+}
+
+if ($checks['vendor_autoload'] === 'ok') {
+    try {
+        require_once $root . '/vendor/autoload.php';
+        require_once $root . '/config/constants.php';
+        echo "bootstrap: ok\n";
+    } catch (Throwable $e) {
+        echo "bootstrap: FAIL - " . $e->getMessage() . "\n";
+    }
+}
+
+echo "\nIf you see this, PHP is working. Delete health.php after fixing the site.\n";

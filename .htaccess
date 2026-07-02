@@ -1,10 +1,14 @@
 RewriteEngine On
+RewriteBase /
+
+DirectoryIndex index.php
 
 # Block access to sensitive directories
 RewriteRule ^(config|core|modules|database|uploads)/ - [F,L]
 
+# Route all non-file requests to front controller (do NOT skip directories —
+# a physical "auth" folder on the server would otherwise break /auth/login)
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 
 # Security headers
@@ -15,4 +19,4 @@ RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
 </IfModule>
 
 # Disable directory listing
-Options -Indexes
+Options -Indexes +FollowSymLinks
