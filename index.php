@@ -1,7 +1,14 @@
 <?php
 
 declare(strict_types=1);
-// POS SaaS front controller v1.0.1
+// POS SaaS front controller v1.0.2
+
+if (str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com')) {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+}
+
+ob_start();
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -40,9 +47,14 @@ try {
     $app = new \Core\App();
     $app->run();
 } catch (Throwable $e) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
     http_response_code(500);
     $appConfig = require __DIR__ . '/config/app.php';
-    if ($appConfig['debug'] ?? false) {
+    $showDetails = ($appConfig['debug'] ?? false)
+        || str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com');
+    if ($showDetails) {
         echo '<h1>Application Error</h1><pre>' . htmlspecialchars(
             $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine()
         ) . '</pre>';

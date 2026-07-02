@@ -20,6 +20,9 @@ abstract class Controller
 
         if ($layout) {
             $layoutFile = dirname(__DIR__) . '/views/layouts/' . $layout . '.php';
+            if (!file_exists($layoutFile)) {
+                throw new \RuntimeException("Layout not found: {$layout}");
+            }
             require $layoutFile;
         } else {
             echo $content;

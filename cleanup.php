@@ -42,6 +42,14 @@ $indexContent = <<<'PHP'
 <?php
 
 declare(strict_types=1);
+// POS SaaS front controller v1.0.2
+
+if (str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com')) {
+    ini_set('display_errors', '1');
+    error_reporting(E_ALL);
+}
+
+ob_start();
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -76,8 +84,26 @@ date_default_timezone_set($appConfig['timezone']);
 
 \Core\Auth::init();
 
-$app = new \Core\App();
-$app->run();
+try {
+    $app = new \Core\App();
+    $app->run();
+} catch (Throwable $e) {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    http_response_code(500);
+    $appConfig = require __DIR__ . '/config/app.php';
+    $showDetails = ($appConfig['debug'] ?? false)
+        || str_contains($_SERVER['HTTP_HOST'] ?? '', 'varitaxes.com');
+    if ($showDetails) {
+        echo '<h1>Application Error</h1><pre>' . htmlspecialchars(
+            $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine()
+        ) . '</pre>';
+    } else {
+        echo '<h1>Server Error</h1><p>The application could not start. Please check database configuration (config/database.local.php).</p>';
+    }
+    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+}
 
 PHP;
 
@@ -120,6 +146,25 @@ line('wrong app/ folder: ' . (is_dir($root . '/app') ? 'YES (bad)' : 'no'));
 line('wrong views/errors/: ' . (is_dir($root . '/views/errors') ? 'YES (bad)' : 'no'));
 line('root auth/ folder: ' . (is_dir($root . '/auth') ? 'YES (blocks routes)' : 'no'));
 line('correct modules/: ' . (is_dir($root . '/modules/auth') ? 'ok' : 'MISSING'));
+
+$authLayout = is_file($root . '/views/layouts/auth.php')
+    ? (string) file_get_contents($root . '/views/layouts/auth.php')
+    : '';
+if ($authLayout === '') {
+    line('auth layout: MISSING');
+} elseif (str_contains($authLayout, 'font-awesome')) {
+    line('auth layout: WRONG (old PakPOS layout — redeploy views/layouts/auth.php)');
+} elseif (str_contains($authLayout, 'bootstrap-icons')) {
+    line('auth layout: ok (POS SaaS)');
+} else {
+    line('auth layout: unknown variant');
+}
+
+$authCtrl = is_file($root . '/modules/auth/AuthController.php')
+    ? (string) file_get_contents($root . '/modules/auth/AuthController.php')
+    : '';
+line('auth lazy model: ' . (str_contains($authCtrl, 'private function model()') ? 'ok' : 'OLD (needs redeploy)'));
+line('database.local.php: ' . (is_file($root . '/config/database.local.php') ? 'ok' : 'MISSING'));
 line('');
 
 if (!$run) {
@@ -165,6 +210,21 @@ line(($wroteIndex !== false ? 'wrote' : 'FAILED') . ': index.php');
 $wroteHtaccess = file_put_contents($root . '/.htaccess', $htaccessContent);
 line(($wroteHtaccess !== false ? 'wrote' : 'FAILED') . ': .htaccess');
 
+$restoreFiles = [
+    'views/layouts/auth.php',
+    'views/auth/login.php',
+    'modules/auth/AuthController.php',
+];
+foreach ($restoreFiles as $rel) {
+    $src = $root . '/' . str_replace('/', DIRECTORY_SEPARATOR, $rel);
+    if (!is_file($src)) {
+        line('MISSING on server (upload from GitHub): ' . $rel);
+        continue;
+    }
+    line('ok: ' . $rel . ' (' . filesize($src) . ' bytes)');
+}
+
 line('');
+line('If database.local.php is missing, open: /setup-database.php');
 line('Done. Test: /auth/login');
 line('Delete cleanup.php and health.php when finished.');
