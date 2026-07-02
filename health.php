@@ -13,6 +13,7 @@ $checks = [
     'core_app'        => is_file($root . '/core/App.php') ? 'ok' : 'MISSING',
     'auth_controller' => is_file($root . '/modules/auth/AuthController.php') ? 'ok' : 'MISSING',
     'mod_rewrite'     => (function_exists('apache_get_modules') && in_array('mod_rewrite', apache_get_modules(), true)) ? 'ok' : 'unknown',
+    'database_local'  => is_file($root . '/config/database.local.php') ? 'ok' : 'MISSING — create from config/database.hostinger.example.php',
 ];
 
 foreach ($checks as $key => $value) {
@@ -24,6 +25,17 @@ if ($checks['vendor_autoload'] === 'ok') {
         require_once $root . '/vendor/autoload.php';
         require_once $root . '/config/constants.php';
         echo "bootstrap: ok\n";
+
+        if (is_file($root . '/config/database.local.php')) {
+            try {
+                \Core\Database::getInstance()->query('SELECT 1');
+                echo "database_connect: ok\n";
+            } catch (Throwable $e) {
+                echo "database_connect: FAIL - " . $e->getMessage() . "\n";
+            }
+        } else {
+            echo "database_connect: skipped (no database.local.php — using default localhost config)\n";
+        }
     } catch (Throwable $e) {
         echo "bootstrap: FAIL - " . $e->getMessage() . "\n";
     }

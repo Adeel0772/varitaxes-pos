@@ -36,5 +36,18 @@ date_default_timezone_set($appConfig['timezone']);
 
 \Core\Auth::init();
 
-$app = new \Core\App();
-$app->run();
+try {
+    $app = new \Core\App();
+    $app->run();
+} catch (Throwable $e) {
+    http_response_code(500);
+    $appConfig = require __DIR__ . '/config/app.php';
+    if ($appConfig['debug'] ?? false) {
+        echo '<h1>Application Error</h1><pre>' . htmlspecialchars(
+            $e->getMessage() . "\n" . $e->getFile() . ':' . $e->getLine()
+        ) . '</pre>';
+    } else {
+        echo '<h1>Server Error</h1><p>The application could not start. Please check database configuration (config/database.local.php).</p>';
+    }
+    error_log($e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+}

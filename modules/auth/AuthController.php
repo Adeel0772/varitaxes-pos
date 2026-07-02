@@ -8,11 +8,15 @@ use Core\Helpers;
 
 class AuthController extends Controller
 {
-    private AuthModel $model;
+    private ?AuthModel $model = null;
 
-    public function __construct()
+    private function model(): AuthModel
     {
-        $this->model = new AuthModel();
+        if ($this->model === null) {
+            require_once __DIR__ . '/AuthModel.php';
+            $this->model = new AuthModel();
+        }
+        return $this->model;
     }
 
     public function login(): void
@@ -33,22 +37,22 @@ class AuthController extends Controller
                 return;
             }
 
-            $attempts = $this->model->getRecentAttempts($email, $ip, LOGIN_LOCKOUT_MINUTES);
+            $attempts = $this->model()->getRecentAttempts($email, $ip, LOGIN_LOCKOUT_MINUTES);
             if ($attempts >= LOGIN_MAX_ATTEMPTS) {
                 Auth::flash('error', 'Too many login attempts. Try again in ' . LOGIN_LOCKOUT_MINUTES . ' minutes.');
                 $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
                 return;
             }
 
-            $superAdmin = $this->model->findSuperAdminByEmail($email);
+            $superAdmin = $this->model()->findSuperAdminByEmail($email);
             if ($superAdmin && password_verify($password, $superAdmin['password'])) {
-                $this->model->clearLoginAttempts($email, $ip);
+                $this->model()->clearLoginAttempts($email, $ip);
                 Auth::login($superAdmin, 'super_admin');
                 $this->logActivity('login', 'auth');
                 $this->redirect('admin/dashboard');
             }
 
-            $user = $this->model->findUserByEmail($email);
+            $user = $this->model()->findUserByEmail($email);
             if ($user && password_verify($password, $user['password'])) {
                 if ($user['status'] !== 'active') {
                     Auth::flash('error', 'Your account is inactive. Contact your shop owner.');
@@ -66,14 +70,14 @@ class AuthController extends Controller
                     return;
                 }
 
-                $this->model->clearLoginAttempts($email, $ip);
-                $this->model->updateLastLogin((int) $user['id']);
+                $this->model()->clearLoginAttempts($email, $ip);
+                $this->model()->updateLastLogin((int) $user['id']);
                 Auth::login($user, 'user');
                 $this->logActivity('login', 'auth', (int) $user['id']);
                 $this->redirect('dashboard');
             }
 
-            $this->model->recordLoginAttempt($email, $ip);
+            $this->model()->recordLoginAttempt($email, $ip);
             Auth::flash('error', 'Invalid email or password.');
         }
 
@@ -121,12 +125,12 @@ class AuthController extends Controller
         if (strlen($data['password']) < 8) $errors[] = 'Password must be at least 8 characters.';
 
         $slug = Helpers::slugify($data['shop_name']);
-        if ($this->model->slugExists($slug)) {
+        if ($this->model()->slugExists($slug)) {
             $slug .= '-' . random_int(100, 999);
         }
         $data['slug'] = $slug;
 
-        if ($this->model->emailExists($data['email'])) {
+        if ($this->model()->emailExists($data['email'])) {
             $errors[] = 'Email is already registered.';
         }
 
@@ -140,7 +144,7 @@ class AuthController extends Controller
         }
 
         try {
-            $shopId = $this->model->registerShop($data);
+            $shopId = $this->model()->registerShop($data);
             $this->logActivity('register', 'shops', $shopId, 'New shop registration: ' . $data['shop_name']);
             Auth::flash('success', 'Registration successful! Your shop is pending approval. You will be notified once approved.');
             $this->redirect('auth/login');

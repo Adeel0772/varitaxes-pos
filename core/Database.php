@@ -31,10 +31,11 @@ class Database
                 self::$instance = new PDO($dsn, $config['username'], $config['password'], $options);
             } catch (PDOException $e) {
                 $appConfig = require dirname(__DIR__) . '/config/app.php';
+                $message = 'Database connection failed: ' . $e->getMessage();
                 if ($appConfig['debug'] ?? false) {
-                    die('Database connection failed: ' . htmlspecialchars($e->getMessage()));
+                    throw new \RuntimeException($message, 0, $e);
                 }
-                die('Database connection failed. Please contact support.');
+                throw new \RuntimeException('Database connection failed. Please contact support.', 0, $e);
             }
         }
         return self::$instance;
