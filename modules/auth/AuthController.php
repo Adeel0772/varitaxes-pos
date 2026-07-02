@@ -6,6 +6,8 @@ use Core\Auth;
 use Core\Controller;
 use Core\Helpers;
 
+require_once __DIR__ . '/AuthViews.php';
+
 class AuthController extends Controller
 {
     private ?AuthModel $model = null;
@@ -33,14 +35,14 @@ class AuthController extends Controller
 
             if (empty($email) || empty($password)) {
                 Auth::flash('error', 'Email and password are required.');
-                $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+                $this->renderLoginView();
                 return;
             }
 
             $attempts = $this->model()->getRecentAttempts($email, $ip, LOGIN_LOCKOUT_MINUTES);
             if ($attempts >= LOGIN_MAX_ATTEMPTS) {
                 Auth::flash('error', 'Too many login attempts. Try again in ' . LOGIN_LOCKOUT_MINUTES . ' minutes.');
-                $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+                $this->renderLoginView();
                 return;
             }
 
@@ -56,17 +58,17 @@ class AuthController extends Controller
             if ($user && password_verify($password, $user['password'])) {
                 if ($user['status'] !== 'active') {
                     Auth::flash('error', 'Your account is inactive. Contact your shop owner.');
-                    $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+                    $this->renderLoginView();
                     return;
                 }
                 if ($user['shop_status'] === 'suspended') {
                     Auth::flash('error', 'Your account is suspended. Contact support.');
-                    $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+                    $this->renderLoginView();
                     return;
                 }
                 if ($user['shop_status'] === 'pending') {
                     Auth::flash('error', 'Your shop registration is pending approval.');
-                    $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+                    $this->renderLoginView();
                     return;
                 }
 
@@ -81,7 +83,42 @@ class AuthController extends Controller
             Auth::flash('error', 'Invalid email or password.');
         }
 
-        $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+        $this->renderLoginView();
+    }
+
+    private function renderLoginView(): void
+    {
+        $root = dirname(__DIR__, 2);
+        if (!AuthViews::viewsAreValid($root)) {
+            AuthViews::repair($root);
+        }
+
+        if (AuthViews::viewsAreValid($root)) {
+            $this->view('auth/login', ['pageTitle' => 'Login'], 'auth');
+            return;
+        }
+
+        $this->renderLoginFallback();
+    }
+
+    private function renderLoginFallback(): void
+    {
+        $pageTitle = 'Login';
+        $tmpDir = dirname(__DIR__, 2) . '/uploads/tmp';
+        if (!is_dir($tmpDir)) {
+            @mkdir($tmpDir, 0755, true);
+        }
+
+        $loginFile = $tmpDir . '/_login_render.php';
+        $layoutFile = $tmpDir . '/_auth_layout_render.php';
+        file_put_contents($loginFile, AuthViews::loginTemplate());
+        file_put_contents($layoutFile, AuthViews::layoutTemplate());
+
+        ob_start();
+        include $loginFile;
+        $content = ob_get_clean() ?: '';
+
+        include $layoutFile;
     }
 
     public function logout(): void
